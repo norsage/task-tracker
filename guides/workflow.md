@@ -132,7 +132,8 @@ sessions on the same checkout share the board.
 - `status: in-progress` is the claim. If you see it, the task is taken;
   pick another.
 - `next.py --claim` performs the planned → in-progress transition under
-  a single board-wide file lock (`docs/tasks/.tt.lock`, `fcntl.flock`).
+  a single board-wide file lock (`fcntl.flock` on a file in the system's
+  temp directory, keyed by the board's path, so the working tree stays clean).
   Two simultaneous claims get different tasks; no collision possible.
 - The lock auto-releases on process exit (kernel semantics), so a crashed
   agent never freezes the board. The task it was working on stays

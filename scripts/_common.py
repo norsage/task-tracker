@@ -541,7 +541,14 @@ def board_lock(root: Path, board: str | None = None):
     """
     lock_dir = board_dir(root, "tasks", board)
     lock_dir.mkdir(parents=True, exist_ok=True)
-    lock_path = lock_dir / ".tt.lock"
+    # Outside the repository on purpose: a lock file inside it shows up in
+    # `git status`, and tools that refuse or flag a dirty tree (a remote run
+    # of the committed tree, a run tracker's git.dirty tag) would trip on the
+    # act of claiming a task. One lock per board directory, keyed by its path.
+    import hashlib
+    import tempfile
+    digest = hashlib.sha256(str(lock_dir.resolve()).encode()).hexdigest()[:16]
+    lock_path = Path(tempfile.gettempdir()) / f"task-tracker-{digest}.lock"
     with open(lock_path, "w") as f:
         fcntl.flock(f, fcntl.LOCK_EX)
         try:
