@@ -18,7 +18,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _common import (  # noqa: E402
     TASK_TYPES, all_ids, allocate_id, board_dir, board_lock, dump_frontmatter,
-    find_root, load_config, parse_frontmatter, resolve_id, slugify,
+    find_root, load_config, NeedSlug, parse_frontmatter, resolve_id, slugify,
 )
 
 DIR_README = """\
@@ -62,6 +62,8 @@ def main() -> int:
     p = argparse.ArgumentParser(description="Create a new spec or task.")
     p.add_argument("kind", choices=["spec", *TASK_TYPES])
     p.add_argument("title")
+    p.add_argument("--slug", help="the filename's readable half, in English; required "
+                   "when the title is not English")
     p.add_argument("--description", help="one-line description")
     p.add_argument("--epic", help="parent epic id (tasks/bugs/spikes only); "
                                   "a bare number works while it is unambiguous")
@@ -82,6 +84,12 @@ def main() -> int:
 
     if args.as_dir and args.kind == "spec":
         print("error: --dir applies to tasks, not specs", file=sys.stderr)
+        return 2
+
+    try:
+        slug = slugify(args.title, given=args.slug)
+    except NeedSlug as exc:
+        print(f"error: {exc}", file=sys.stderr)
         return 2
 
     project_root = (args.root or find_root()).resolve()
@@ -140,7 +148,7 @@ def main() -> int:
         if args.exits:
             meta["exits"] = args.exits
 
-        stem = f"{new_id}-{slugify(args.title)}"
+        stem = f"{new_id}-{slug}"
         body = tmpl_body
         if args.as_dir:
             task_dir = folder / stem

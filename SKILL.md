@@ -142,6 +142,10 @@ To delete individual archived files (digests preserved):
   filler: "Repo reorg close-out handoff" gives `repo-reorg-close-out-handoff`,
   whole. Read the slug `new.py` prints; if it ends mid-phrase, reword the
   title, don't rename the file.
+- **Filenames are English, whatever the title's language.** A title in
+  another language (a Russian board) needs `--slug` with three or four
+  English words; `new.py` refuses it without one. The title and body stay
+  in the board's language.
 - **Omit empty optional frontmatter fields.** Don't leave `tags: null`
   or `epic: null` behind.
 - **Bump `updated`** every time you change a task's frontmatter or

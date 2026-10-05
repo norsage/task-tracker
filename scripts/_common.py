@@ -79,12 +79,32 @@ def as_date(v):
         return None
 
 
-_SLUG_RE = re.compile(r"[^\w\s-]")
+# ASCII only. A transliterated or Cyrillic slug is greppable in neither
+# language, so a non-English title names its file through --slug instead.
+_SLUG_RE = re.compile(r"[^a-z0-9\s-]")
+_NON_ASCII = re.compile(r"[^\x00-\x7f]")
 
 
-def slugify(title: str, max_words: int = 4) -> str:
-    s = _SLUG_RE.sub("", title.lower()).strip()
+class NeedSlug(ValueError):
+    """A non-English title, with no English slug given for it."""
+
+
+def slugify(title: str, max_words: int = 4, given: str | None = None) -> str:
+    """The filename's readable half, always English.
+
+    An English title slugifies itself. Anything else needs `given`: whoever
+    wrote the title can say it in English, and no mechanical rule can.
+    """
+    if given is None and _NON_ASCII.search(title):
+        raise NeedSlug(
+            f"{title!r} is not English, so it cannot name its own file. "
+            f"Filenames stay English whatever the task's language. "
+            f"Pass --slug with three or four English words, e.g. --slug publish-split-tool"
+        )
+    s = _SLUG_RE.sub("", (given if given is not None else title).lower()).strip()
     words = s.split()[:max_words]
+    if given is not None and not words:
+        raise NeedSlug(f"--slug {given!r} leaves nothing usable: English words, letters and digits")
     return "-".join(words) or "untitled"
 
 
